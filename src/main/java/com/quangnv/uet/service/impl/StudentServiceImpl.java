@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.transaction.Transactional;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -40,7 +42,12 @@ public class StudentServiceImpl implements StudentService {
 	}
 
 	@Override
+	@Transactional
 	public StudentDto editStudent(StudentDto studentDto) {
+		if (studentRepository.existsById(studentDto.getId())) {
+			studentRepository.deleteById(studentDto.getId());
+		}
+
 		StudentEntity studentEntity = modelMapper.map(studentDto, StudentEntity.class);
 		studentEntity = studentRepository.save(studentEntity);
 		log.info("Edit student with studentId: " + studentDto.getId());
