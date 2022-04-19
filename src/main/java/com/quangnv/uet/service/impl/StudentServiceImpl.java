@@ -1,7 +1,11 @@
 package com.quangnv.uet.service.impl;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ResourceUtils;
 
 import com.quangnv.uet.dto.StudentDto;
 import com.quangnv.uet.dto.StudentListDto;
@@ -22,6 +27,13 @@ import com.quangnv.uet.repositories.StudentRepository;
 import com.quangnv.uet.service.StudentService;
 
 import lombok.extern.slf4j.Slf4j;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperExportManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 
 @Service
 @Slf4j
@@ -92,6 +104,28 @@ public class StudentServiceImpl implements StudentService {
 		} else {
 			throw new ResourceNotFoundException(studentId + " not found!");
 		}
+	}
+
+	@Override
+	public String exportReport(String reportFormat) throws FileNotFoundException, JRException {
+		String path = "C:\\Users\\asus\\OneDrive\\Máy tính";
+		List<StudentEntity> studentList = studentRepository.findAll();
+		File file = ResourceUtils.getFile("classpath:reports/student.jrxml");
+		JasperReport jasperReport = JasperCompileManager.compileReport(file.getAbsolutePath());
+		JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(studentList);
+		Map<String, Object> parmeters = new HashMap<String, Object>();
+		parmeters.put("createBy", "Java Techie");
+		JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parmeters, dataSource);
+		String downloadUri = null;
+		if (reportFormat.equalsIgnoreCase("html")) {
+			downloadUri = "http://localhost:8080/student/download/students.html";
+			JasperExportManager.exportReportToHtmlFile(jasperPrint, path + "\\students.html");
+		}
+		if (reportFormat.equalsIgnoreCase("pdf")) {
+			downloadUri = "http://localhost:8080/student/download/students.pdf";
+			JasperExportManager.exportReportToPdfFile(jasperPrint, path + "\\students.pdf");
+		}
+		return downloadUri;
 	}
 
 }
